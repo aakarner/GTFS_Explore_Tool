@@ -1,5 +1,7 @@
 ﻿-- NUMBER OF ROUTES SERVED
--- Uses trip table to find those with service_id=1 which means M-F for SEPTA. Also uses direction_id to ensure only one direction is counted so that if trip x serves stop y in two directions, it’s only counted once. 
+-- Uses trip table to find those with service_id=1 which means M-F for SEPTA. 
+-- Also uses direction_id to ensure only one direction is counted so that if 
+-- trip x serves stop y in two directions, it’s only counted once. 
 CREATE TABLE stop_level_routes_served AS
 SELECT stop_id, service_id, direction_id, count(distinct route_id) as numRoutes
 FROM gtfs_stop_times a
@@ -11,7 +13,8 @@ ORDER BY service_id, stop_id, direction_id;
 
 
 -- NUM TRIPS PER DAY
--- Counts number of trip_id’s associated with each stop_id. We could add route_id as a group-by function if needed. Slow to execute currently.
+-- Counts number of trip_id’s associated with each stop_id. We could add 
+-- route_id as a group-by function if needed. Slow to execute currently.
 CREATE TABLE stop_level_trips_per_day AS
 SELECT service_id, stop_id, direction_id, count(b.trip_id) AS "TripsServingStop" 
 FROM gtfs_stop_times a
@@ -23,7 +26,11 @@ ORDER BY service_id, stop_id, direction_id;
 
 
 -- AVG TIME BETWEEN ARRIVALS
--- Provides average and stdev headways for a particular direction of a route at a stop at different service plans (M-D/Sa/Su etc. Note that headways less than 3 min are ignored per guidance in TCQSM as not being the equivalent of two separate arrivals. Those >90min are ignored as well as likely service breaks (no lit support).
+-- Provides average and stdev headways for a particular direction of a route at 
+-- a stop at different service plans (M-D/Sa/Su etc. Note that headways less 
+-- than 3 min are ignored per guidance in TCQSM as not being the equivalent of 
+-- two separate arrivals. Those >90min are ignored as well as likely service 
+-- breaks (no lit support).
 
 CREATE TABLE stop_level_avg_hdwy AS 
 SELECT service_id, stop_id, route_id, direction_id, avgHdwy, stdev_hdwy 
@@ -46,7 +53,8 @@ JOIN gtfs_routes USING (route_id)
 ORDER BY service_id, stop_id, route_id, direction_id;
 
 --CREATE STOP LEVEL AND STOP/ROUTE LEVEL REPORTS
---stop_level_report provides summary information for each stop at each service_id and direction_id. 
+--stop_level_report provides summary information for each stop at each 
+-- service_id and direction_id. 
 --
 CREATE VIEW stop_level_Report AS
 SELECT * 
@@ -66,7 +74,8 @@ JOIN (SELECT route_short_name, route_long_name, route_id FROM gtfs_routes) b USI
 --ROUTE LEVEL ANALYSES
 
 -- NUM TRIPS PER DAY
--- Organized by service_id for day of week, route_id as primary and direction_id as secondary grouping/sorting, show the number of trips scheduled per day.
+-- Organized by service_id for day of week, route_id as primary and direction_id
+-- as secondary grouping/sorting, show the number of trips scheduled per day.
 CREATE TABLE route_level_trips_per_day AS
 SELECT service_id, route_id, count(trip_id) AS numTripsPerRoute_both_dir
 FROM gtfs_trips JOIN gtfs_routes USING (route_id)
@@ -74,7 +83,9 @@ GROUP BY service_id, route_id
 ORDER BY service_id, route_id;
 
 -- HOURS OF SERVICE
--- This provides the hours of the day in which this route operates at ANY stop. A route length of 90 min whose last trip starts at 8pm would show up as having service at 8pm and 9pm. This includes both directions.
+-- This provides the hours of the day in which this route operates at ANY stop. 
+-- A route length of 90 min whose last trip starts at 8pm would show up as 
+-- having service at 8pm and 9pm. This includes both directions.
 CREATE TABLE route_level_hrs_of_service AS
 SELECT service_id, route_id, count(distinct departure_time_seconds/3600) AS hours_of_service
 FROM (SELECT stop_id, departure_time_seconds, trip_id	FROM gtfs_stop_times) a
@@ -102,7 +113,9 @@ GROUP BY service_id, route_id
 ORDER BY service_id, route_id;
 
 -- NUMBER OF STOPS PER ROUTE
--- Reports number of stops for each trip and then creates a weighted average for all the trips that belong to a route to account for a higher number of similar runs
+-- Reports number of stops for each trip and then creates a weighted average 
+-- for all the trips that belong to a route to account for a higher number of 
+-- similar runs.
 CREATE TABLE route_level_num_stops_detail AS
 SELECT service_id, route_id, direction_id, stops_per_trip, COUNT(*) AS num_similar_runs
 FROM(
@@ -123,7 +136,9 @@ GROUP BY service_id, route_id, direction_id
 ORDER BY route_id, service_id;
 
 -- AVERAGE HEADWAY ON ROUTE
--- This provides the average headway of a route based on the stop-route headway at the most popular stop of each route. It is arbitrarily chosen among multiple stops with the same number of arrivals per day.
+-- This provides the average headway of a route based on the stop-route headway 
+-- at the most popular stop of each route. It is arbitrarily chosen among 
+-- multiple stops with the same number of arrivals per day.
 CREATE TABLE route_level_headway AS
 SELECT service_id, route_id, direction_id, avghdwy AS route_avg_hdwy, stdev_hdwy AS route_stdev_hdwy, trips_per_day
 FROM stop_level_avg_hdwy a
@@ -144,8 +159,9 @@ USING (service_id, route_id, direction_id, stop_id);
 
 -- AVERAGE DISTANCE BETWEEN STOPS
 -- Note that this uses the st_line_locate function which requires use 
--- of geometries which are using the google universal projection. Ideally it will use
--- state planes or geographies which should be updated for the future.
+-- of geometries which are using the google universal projection. Ideally 
+-- it will use state planes or geographies which should be updated for the 
+-- future.
 
 CREATE INDEX ON gtfs_stop_times(stop_id);
 CREATE INDEX ON gtfs_trips(trip_id);
@@ -158,7 +174,7 @@ SELECT 	b.stop_id,
 FROM (
 	SELECT a.stop_id, 
 		a.shape_id, 
-		ST_line_locate_point(route.the_geom, stop.the_geom) as percent_along_route,
+		ST_LineLocatePoint(route.the_geom, stop.the_geom) as percent_along_route,
 		ST_length(st_transform(route.the_geom,900913)) as route_length_meters
 	FROM (
 		SELECT DISTINCT stop_id, shape_id 
@@ -203,7 +219,9 @@ DROP TABLE temp3, stop_times_w_dist_duration;
 
 
 -- TRIP SPEED
--- Provides the speed of every trip along with start/end time and duration. Includes support information like service id, route id and trip id. Can be aggregated to provide better time-of-day information
+-- Provides the speed of every trip along with start/end time and duration. 
+-- Includes support information like service id, route id and trip id. 
+-- Can be aggregated to provide better time-of-day information
 
 CREATE INDEX ON gtfs_stop_times(trip_id);
 CREATE INDEX ON gtfs_trips(trip_id);
@@ -251,7 +269,8 @@ FROM temp2;
 DROP TABLE temp1, temp2;
 
 -- ROUTE SPEED
--- Separate summary table using average of all trips per route for a speed (on a specific service_id)
+-- Separate summary table using average of all trips per route for a speed 
+-- (on a specific service_id)
 CREATE TABLE route_level_speeds AS
 SELECT 	service_id, 
 	direction_id,
