@@ -1,6 +1,8 @@
 GTFS_Explore_Tool
 =================
 
+TODO: Improve the existing documentation. Note that GTFS_Explore.sql and GTFS Explore.sql are different.
+
 A postgres based analysis of transit service from a GTFS feed using TCQSM based methodologies and batch analysis tools.
 
 This is a series of .sql scripts and R code designed to provide the user with information about the transit service described in a GTFS feed using methodologies from the Transit Capacity and Quality of Service Manual 2nd Ed (The project visiting the third editions is at  http://tcqsm.org).
