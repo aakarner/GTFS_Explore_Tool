@@ -1,6 +1,10 @@
 # Run batch analysis on GTFS feeds
 # Input: A list of data exchange ids
 
+# This script is defunct as the GTFS data exchange is no longer active.
+# It previously would have downloaded the current GTFS feeds from each of
+# the agencies listed in a 
+
 from sys import argv
 from subprocess import call
 from re import compile
@@ -30,4 +34,4 @@ for line in reader:
 
     call([here + '/import_gtfs_and_analyze.sh', shortname + '.zip', shortname])
 
-    # Don't remove the GTFSs, they mat be useful later.
+    # Don't remove the GTFSs, they may be useful later.
